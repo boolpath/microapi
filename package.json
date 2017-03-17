@@ -1,0 +1,21 @@
+{
+  "name": "microapi",
+  "version": "0.1.0",
+  "description": "Plug and play API server for Async microservices.",
+  "main": "index.js",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/jorgezaccaro/microapi.git"
+  },
+  "keywords": [
+    "api",
+    "async"
+  ],
+  "author": "jorgezaccaro@gmail.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jorgezaccaro/microapi/issues"
+  },
+  "homepage": "https://github.com/jorgezaccaro/microapi#readme"
+}
