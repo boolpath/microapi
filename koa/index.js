@@ -14,7 +14,7 @@ class Microapi extends Koa {
   }
   define(api = './api') {
     let directory = path.resolve(process.cwd(), api)
-    this.definitions = routing(this.router, directory)
+    this.routing = routing(this.router, directory)
     this.use(this.router.routes())
     this.use(this.router.allowedMethods())
   }

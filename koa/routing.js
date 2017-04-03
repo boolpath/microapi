@@ -1,12 +1,16 @@
 'use strict'
 
 const fs = require('fs')
+const pathjoin = require('path').join
 const requireDirectory = require('require-directory')
 
 const validation = require('./validation')
 const wrappers = require('./wrappers')
 
-function routing(router, handlers, schemas, path = '') {
+const underscore = /\/_/g
+const slashcolon = '/:'
+
+function routing(router, handlers, schemas, path = '/') {
   let mapping = new Map()
   let middleware
 
@@ -15,9 +19,9 @@ function routing(router, handlers, schemas, path = '') {
       let handler = handlers[segment]
 
       if (typeof handler === 'object') {
-        routing(router, handler, schemas[segment], `${path}/${segment}`)
+        routing(router, handler, schemas[segment], pathjoin(path, segment))
       } else {
-        path = path.replace(/_/g, ':') // colons for url parameters
+        path = path.replace(underscore, slashcolon) // colons for url parameters
         if (segment === 'use') middleware = wrappers.middleware(handler)
         else mapping.set(`${segment} ${path}`, {method: segment, path, handler})
       }
@@ -25,7 +29,7 @@ function routing(router, handlers, schemas, path = '') {
   }
 
   for (let [/*segpath*/, {method, path, handler}] of mapping) {
-    router[method](path, validation({schemas, method}))
+    // router[method](path, validation({schemas, method}))
     if (middleware) router.use(path, middleware) && (middleware = undefined)
     router[method](path, wrappers.callback(handler))
   }
