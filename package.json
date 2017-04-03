@@ -1,6 +1,6 @@
 {
   "name": "microapi",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Plug and play API server for Async microservices.",
   "main": "index.js",
   "scripts": {},

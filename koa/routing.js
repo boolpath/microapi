@@ -10,7 +10,7 @@ const wrappers = require('./wrappers')
 const underscore = /\/_/g
 const slashcolon = '/:'
 
-function routing(router, handlers, schemas, path = '/') {
+function routing(router, handlers, schemas = {}, path = '/') {
   let mapping = new Map()
   let middleware
 
