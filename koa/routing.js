@@ -7,8 +7,8 @@ const requireDirectory = require('require-directory')
 const validation = require('./validation')
 const wrappers = require('./wrappers')
 
-const underscore = /\/_/g
-const slashcolon = '/:'
+const underscore = /\/_/g // path segments starting with underscore: /_
+const slashcolon = '/:' // colons for url parameters
 
 function routing(router, handlers, schemas = {}, path = '/') {
   let mapping = new Map()
@@ -21,7 +21,7 @@ function routing(router, handlers, schemas = {}, path = '/') {
       if (typeof handler === 'object') {
         routing(router, handler, schemas[segment], pathjoin(path, segment))
       } else {
-        path = path.replace(underscore, slashcolon) // colons for url parameters
+        path = path.replace(underscore, slashcolon)
         if (segment === 'use') middleware = wrappers.middleware(handler)
         else mapping.set(`${segment} ${path}`, {method: segment, path, handler})
       }
@@ -29,7 +29,7 @@ function routing(router, handlers, schemas = {}, path = '/') {
   }
 
   for (let [/*segpath*/, {method, path, handler}] of mapping) {
-    // router[method](path, validation({schemas, method}))
+    router[method](path, validation({schemas, method}))
     if (middleware) router.use(path, middleware) && (middleware = undefined)
     router[method](path, wrappers.callback(handler))
   }
