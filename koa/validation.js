@@ -7,7 +7,7 @@ const validSections = ['path', 'query', 'body', 'header']
 
 function validation({ schemas = {}, method }) {
   let {[method]: {
-    definitions: {request = {}, response = {}} = {},
+    definitions: {request = {}, responses = {}} = {},
     validations: {request: validateRequest, response: validateResponse} = {}
   } = {} } = schemas
 
@@ -19,9 +19,10 @@ function validation({ schemas = {}, method }) {
   return async (context, next) => {
     let body
     try {
-      await validateSchemas(context, request)
+      await validateRequestSchemas(context, request)
       if (validateRequest) await validateRequest(context.request)
       await next() // route handler
+      // await validateResponseSchemas(context, responses)
       if (validateResponse) body = await validateResponse(context.response)
     } catch (error) {
       let {body: responseBody, status = 400} = error
@@ -33,12 +34,21 @@ function validation({ schemas = {}, method }) {
   }
 }
 
-function validateSchemas(context, definitions) {
+function validateRequestSchemas(context, definitions) {
   let sections = Object.keys(definitions)
   let promises = sections.map(section => {
     let schema = definitions[section]
-    return validationPromise(context, {section, schema})
+    return requestValidationPromise(context, {section, schema})
   })
+  return Promise.all(promises)
+}
+
+function validateResponseSchemas({response}, definitions) {
+  let options = {allowUnknown: true}
+  let schema = definitions[response.status] || definitions.default || {}
+  let schemas = {body: joi.object().keys(schema.body || {})}
+  let promises = [joi.validatePromise(response.body, schemas.body, options)]
+
   return Promise.all(promises)
 }
 
@@ -50,7 +60,7 @@ joi.validatePromise = (value, schema, options = {}) => {
   })
 }
 
-function validationPromise({request, params}, {section, schema}) {
+function requestValidationPromise({request, params}, {section, schema}) {
   let promise
 
   switch (section) {
