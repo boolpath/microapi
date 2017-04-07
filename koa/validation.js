@@ -23,7 +23,7 @@ function validation({ schemas = {}, method }) {
       if (validateRequest) await validateRequest(context.request)
       await next() // route handler
       await validateResponseSchemas(context, responses)
-      if (validateResponse) body = await validateResponse(context.response)
+      if (validateResponse) await validateResponse(context.response)
     } catch (error) {
       let {body: responseBody, status = 400} = error
       body = responseBody || error
