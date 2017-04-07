@@ -13,7 +13,7 @@ const Microapi = require('microapi/koa')
 const app = new Microapi()
 
 /* Define routes, schemas and middleware under ./api */
-app.define('./api')
+app.define('./api') // or an absolute path
 
 app.listen(3000)
 ```
@@ -49,7 +49,7 @@ app.listen(3000)
   ...
   /{resource}
     ...
-    /_{parameter}
+    /_{parameter}  (prefix directories with "_" to create URL parameters)
       ...
       /{collection}
         get.js
@@ -63,4 +63,83 @@ app.listen(3000)
   some-middleware.js
   another-middleware.js
   ...
+```
+
+## File Structure
+
+### ./api/routes
+#### [get|post|put|delete].js
+``` js
+module.exports = async function handler({ request, params }) {
+  // return {body: ..., status: 200}
+}
+```
+
+#### use.js
+``` js
+module.exports = async function handler({ request, params }) {
+  // return Promise.reject({body: ..., status: 400}) to interrupt the middleware flow
+}
+```
+
+### ./api/schemas
+#### [get|post|put|delete].js
+The properties of request[path|query|body|header] objects must be Joi schemas (i.e. `name: joi...` pairs).
+``` js
+const joi = require('joi')
+
+const schemas = {
+  request: {
+    path: {},
+    query: {},
+    body: {},
+    header: {}
+  },
+  responses: {
+    default: {
+      description: '',
+      body: {},
+      examples: {}
+    }
+  }
+}
+
+function validateRequest(request) {
+  // return Promise
+}
+
+function validateResponse(response) {
+  // return Promise
+}
+
+module.exports = {
+  description: '',
+  definitions: schemas,
+  validations: {
+    request: validateRequest,
+    response: validateResponse
+  }
+}
+```
+
+### ./api/middleware
+#### index.js
+Insert the middleware into the array in the desired order of execution.
+``` js
+const middleware = require('require-directory')(module)
+
+module.exports = [
+  middleware.default,
+  middleware.{middlewareName},
+  ...
+]
+```
+
+#### {middleware-name}.js
+``` js
+module.exports = async ({request, params}, next) => {
+  // downwards code
+  await next()
+  // upwards code
+}
 ```
