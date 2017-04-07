@@ -22,7 +22,7 @@ function validation({ schemas = {}, method }) {
       await validateRequestSchemas(context, request)
       if (validateRequest) await validateRequest(context.request)
       await next() // route handler
-      // await validateResponseSchemas(context, responses)
+      await validateResponseSchemas(context, responses)
       if (validateResponse) body = await validateResponse(context.response)
     } catch (error) {
       let {body: responseBody, status = 400} = error
@@ -47,9 +47,10 @@ function validateResponseSchemas({response}, definitions) {
   let options = {allowUnknown: true}
   let schema = definitions[response.status] || definitions.default || {}
   let schemas = {body: joi.object().keys(schema.body || {})}
-  let promises = [joi.validatePromise(response.body, schemas.body, options)]
 
-  return Promise.all(promises)
+  return joi.validatePromise(response.body, schemas.body, options)
+    .then(body => response.body = body)
+    .catch(error => response.error = error)
 }
 
 joi.validatePromise = (value, schema, options = {}) => {
