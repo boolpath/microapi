@@ -19,8 +19,18 @@ function validation(method, schemas = {}, definitions = {}) {
   for (let section in request)
     if (validSections.indexOf(section) < 0) delete request[section]
   for (let section of wrapSections) {
-    dereferencing(request[section], definitions)
-    request[section] = joi.object().keys(request[section])
+    if (request[section] && !request[section].isJoi) {
+      dereferencing(request[section], definitions)
+      request[section] = joi.object().keys(request[section])
+    }
+  }
+  /* Prepare response schemas by dereferencing and wrapping response types */
+  for (let section in responses) {
+    if (section === 'default' || !isNaN(section)) {
+      let schema = {body: responses[section].body || {}}
+      responses[section].body = schema.body
+      dereferencing(schema, definitions)
+    }
   }
 
   /* Return an async function for the Koa framework to run on each API call */
@@ -59,10 +69,9 @@ function validateRequestSchemas(context, schemas, definitions) {
 /** Validates a response according to the response status or default schema **/
 function validateResponseSchemas({response}, schemas, definitions) {
   let options = {allowUnknown: true}
-  let {body} = schemas[response.status] || schemas.default || {body: {}}
-  let schema = body.isJoi ? body : joi.object().keys(body)
+  let schema = schemas[response.status] || schemas.default || {body: {}}
 
-  return validationPromise(response.body, schema, options)
+  return validationPromise(response.body, schema.body, options)
     .then(body => response.body = body)
     .catch(error => response.error = error)
 }
