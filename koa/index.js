@@ -6,6 +6,7 @@ const Router = require('koa-router')
 const routing = require('./routing')
 const path = require('path')
 
+/* Extends Koa framework with a declarative approach for mounting routes */
 class Microapi extends Koa {
   constructor() {
     super()

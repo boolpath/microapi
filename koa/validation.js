@@ -2,16 +2,20 @@
 
 const joi = require('joi')
 const joiOptions = {stripUnknown: true}
-const wrapSections = ['path', 'query', 'body']
-const validSections = ['path', 'query', 'body', 'header']
 const dereferencing = require('./dereferencing')
 
-function validation({ method, schemas = {}, definitions = {} }) {
+const wrapSections = ['path', 'query', 'body']
+const validSections = ['path', 'query', 'body', 'header']
+
+/** Validates request parameters using Joi schemas **/
+function validation(method, schemas = {}, definitions = {}) {
+  /* Destructure schema definitions and custom validation functions */
   let {[method]: {
     definitions: {request = {}, responses = {}} = {},
     validations: {request: validateRequest, response: validateResponse} = {}
   } = {} } = schemas
 
+  /* Prepare request schemas by filtering, dereferencing and wrapping sections */
   for (let section in request)
     if (validSections.indexOf(section) < 0) delete request[section]
   for (let section of wrapSections) {
@@ -19,45 +23,53 @@ function validation({ method, schemas = {}, definitions = {} }) {
     request[section] = joi.object().keys(request[section])
   }
 
+  /* Return an async function for the Koa framework to run on each API call */
   return async (context, next) => {
     let body
     try {
+      /* Schema and custom request validations */
       await validateRequestSchemas(context, request, definitions)
       if (validateRequest) await validateRequest(context.request)
-      await next() // route handler
+      await next() /* wait for the route handler */
+      /* Schema and custom response validations */
       await validateResponseSchemas(context, responses, definitions)
       if (validateResponse) await validateResponse(context.response)
     } catch (error) {
+      /* Pending: better handling and logging */
       let {body: responseBody, status = 400} = error
       body = responseBody || error
       context.status = status
     } finally {
+      /* Update response body to account for errors or response formatting */
       context.response.body = body || context.response.body
     }
   }
 }
 
-
+/** Validates all validSections of a request **/
 function validateRequestSchemas(context, schemas, definitions) {
   let sections = Object.keys(schemas)
   let promises = sections.map(section => {
     let schema = schemas[section]
-    return requestValidationPromise(context, {section, schema})
+    return requestValidationPromise(context, section, schema)
   })
   return Promise.all(promises)
 }
 
+/** Validates a response according to the response status or default schema **/
 function validateResponseSchemas({response}, schemas, definitions) {
   let options = {allowUnknown: true}
-  let schema = schemas[response.status] || schemas.default || {}
-  let bodySchema = joi.object().keys(schema.body || {})
+  let {body} = schemas[response.status] || schemas.default || {body: {}}
+  let schema = body.isJoi ? body : joi.object().keys(body)
 
-  return joi.validatePromise(response.body, bodySchema, options)
+  return validationPromise(response.body, schema, options)
     .then(body => response.body = body)
     .catch(error => response.error = error)
 }
 
-joi.validatePromise = (value, schema, options = {}) => {
+
+/** Promisifies joi.validate method  **/
+function validationPromise(value, schema, options = {}) {
   return new Promise((resolve, reject) => {
     joi.validate(value, schema, options, (err, value) => {
       err ? reject(err) : resolve(value)
@@ -65,22 +77,23 @@ joi.validatePromise = (value, schema, options = {}) => {
   })
 }
 
-function requestValidationPromise({request, params}, {section, schema}) {
+/** Validates a section of request parameters according to its type **/
+function requestValidationPromise({request, params}, section, schema) {
   let promise
 
   switch (section) {
   case 'path':
-    promise = joi.validatePromise(params, schema, joiOptions)
+    promise = validationPromise(params, schema, joiOptions)
       .then(value => params = value)
     break;
   case 'query': case 'body':
-    promise = joi.validatePromise(request[section], schema, joiOptions)
+    promise = validationPromise(request[section], schema, joiOptions)
       .then(value => request[section] = value)
     break;
   case 'header':
     promise = Promise.all(Object.keys(schema).map(name => {
       let value = (request[section] || {})[name]
-      return joi.validatePromise(value, schema[name], joiOptions)
+      return validationPromise(value, schema[name], joiOptions)
     }))
     break;
   default:

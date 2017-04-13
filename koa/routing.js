@@ -12,14 +12,16 @@ const wrappers = require('./wrappers')
 const underscore = /\/_/g // path segments starting with underscore: /_
 const slashcolon = '/:' // colons for url parameters
 
-function routing(router, handlers, schemas = {}, definitions = {}, path = '/') {
+/** Recursively mounts all routes - middleware and callback handlers **/
+function routing(router, routes, schemas = {}, definitions = {}, path = '/') {
   let mapping = new Map()
   let middleware
 
-  for (let segment in handlers) {
-    if (handlers.hasOwnProperty(segment)) {
-      let handler = handlers[segment]
+  for (let segment in routes) {
+    if (routes.hasOwnProperty(segment)) {
+      let handler = routes[segment]
 
+      /* Map route handlers or keep searching through the directory tree */
       if (typeof handler === 'object') {
         let nextPath = pathjoin(path, segment)
         routing(router, handler, schemas[segment], definitions, nextPath)
@@ -31,8 +33,9 @@ function routing(router, handlers, schemas = {}, definitions = {}, path = '/') {
     }
   }
 
+  /* Mount validation and request handlers for all paths */
   for (let [/*segpath*/, {method, path, handler}] of mapping) {
-    router[method](path, validation({method, schemas, definitions}))
+    router[method](path, validation(method, schemas, definitions))
     if (middleware) router.use(path, middleware) && (middleware = undefined)
     router[method](path, wrappers.callback(handler))
   }
@@ -40,16 +43,12 @@ function routing(router, handlers, schemas = {}, definitions = {}, path = '/') {
   mapping.clear()
 }
 
+/** Loads the specified directory and the supported API description files **/
 function loadApiDirectory(directory) {
   let contents = {}
 
-  try {
-    if (fs.statSync(directory).isDirectory()) {
-      contents = requireDirectory(module, directory)
-    }
-  } catch (e) {
-    throw e
-  }
+  try { contents = requireDirectory(module, directory) }
+  catch (e) { throw new Error('api-directory-not-found')}
 
   let {routes = {}, schemas = {}, middleware = {}, definitions = {}} = contents
   return {routes, middleware, schemas, definitions}
@@ -61,5 +60,5 @@ module.exports = (router, directory) => {
   dereferenceSchemas(definitions, definitions)
   routing(router, routes, schemas, definitions)
 
-  return {routes, schemas, middleware}
+  return {routes, schemas, middleware, definitions}
 }
