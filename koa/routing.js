@@ -48,7 +48,7 @@ function loadApiDirectory(directory) {
   let contents = {}
 
   try { contents = requireDirectory(module, directory) }
-  catch (e) { throw new Error('api-directory-not-found')}
+  catch (error) { throw error || new Error('api-directory-not-found')}
 
   let {routes = {}, schemas = {}, middleware = {}, definitions = {}} = contents
   return {routes, middleware, schemas, definitions}

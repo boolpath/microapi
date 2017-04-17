@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {},
   "dependencies": {
+    "clone": "^2.1.1",
     "joi": "^10.4.1",
     "koa": "^2.2.0",
     "koa-body": "^2.0.0",
