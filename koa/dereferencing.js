@@ -17,14 +17,13 @@ function dereferenceSchema(schema, definitions) {
 function findReferences(schema, property, definitions) {
   let subschema = schema[property]
   let {className} = (subschema._meta || []).find(meta => meta.className) || {}
-
   /* Replace reference with definition or keep looking in joi._inner.children */
   if (className && definitions[className]) {
     schema[property] = clone(definitions[className])
     Object.assign(schema[property]._flags || {}, subschema._flags)
   } else if (subschema._inner && subschema._inner.children) {
-    for (let index in subschema._inner.children) {
-      findReferences(subschema._inner.children[index], 'schema', definitions)
+    for (let child of subschema._inner.children) {
+      findReferences(child, 'schema', definitions)
       /* the 'schema' parameter is a property of joi {key, schema} elements */
     }
   }

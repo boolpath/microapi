@@ -3,8 +3,13 @@
 /** Wraps route callback handlers to implement the (context, next) signature **/
 function callback(handler) {
   return async (context) => {
-    let {body} = await handler(context)
-    context.response.body = body
+    try {
+      let {body} = await handler(context)
+      context.response.body = body
+    } catch(e) {
+      console.log(e)
+      // DO SOMETHING TO PREVENT EXCEPTIONS FROM BEING SWALLOWED
+    }
   }
 }
 
