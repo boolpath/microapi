@@ -6,9 +6,14 @@ function callback(handler) {
     try {
       let {body} = await handler(context)
       context.response.body = body
-    } catch(e) {
-      console.log(e)
-      // DO SOMETHING TO PREVENT EXCEPTIONS FROM BEING SWALLOWED
+    } catch(exception) {
+      if (typeof handler.exceptions === 'function') {
+        let {body} = await handler.exceptions(context, exception)
+        context.response.body = body
+      } else {
+        // DO SOMETHING TO PREVENT EXCEPTIONS FROM BEING SWALLOWED
+        context.response.body = {error: {name: exception.message}}
+      }
     }
   }
 }
