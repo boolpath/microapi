@@ -4,11 +4,13 @@
 function callback(handler) {
   return async (context) => {
     try {
-      let {body} = await handler(context)
+      let {body, status} = await handler(context)
+      context.response.status = status
       context.response.body = body
     } catch(exception) {
       if (typeof handler.exceptions === 'function') {
-        let {body} = await handler.exceptions(context, exception)
+        let {body, status} = await handler.exceptions(context, exception)
+        context.response.status = status
         context.response.body = body
       } else {
         // DO SOMETHING TO PREVENT EXCEPTIONS FROM BEING SWALLOWED
