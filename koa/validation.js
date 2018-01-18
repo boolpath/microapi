@@ -38,8 +38,10 @@ function validation(method, schemas = {}, definitions = {}) {
     let body
     try {
       /* Schema and custom request validations */
-      await validateRequestSchemas(context, request, definitions)
+      let validation = await validateRequestSchemas(context, request, definitions)
+      if (validation instanceof Error) context.request.validation = validation
       if (validateRequest) await validateRequest(context.request)
+      if (context.request.validation) throw context.request.validation
       await next() /* wait for the route handler */
       /* Schema and custom response validations */
       await validateResponseSchemas(context, responses, definitions)
@@ -64,6 +66,7 @@ function validateRequestSchemas(context, schemas, definitions) {
     return requestValidationPromise(context, section, schema)
   })
   return Promise.all(promises)
+    .catch(error => (delete error._object && error))
 }
 
 /** Validates a response according to the response status or default schema **/
