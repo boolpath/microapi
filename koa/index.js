@@ -2,6 +2,7 @@
 
 const Koa = require('koa')
 const body = require('koa-body')
+const cors = require('@koa/cors')
 const Router = require('koa-router')
 const routing = require('./routing')
 const path = require('path')
@@ -11,6 +12,7 @@ class Microapi extends Koa {
   constructor() {
     super()
     this.use(body())
+    this.use(cors())
     this.router = new Router()
   }
   define(api = './api') {
