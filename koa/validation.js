@@ -96,11 +96,13 @@ function requestValidationPromise({request, params}, section, schema) {
   switch (section) {
   case 'path':
     promise = validationPromise(params, schema, joiOptions)
-      .then(value => params = value)
+      .then(values => Object.keys(values).map(key => params[key] = values[key]))
     break;
   case 'query': case 'body':
     promise = validationPromise(request[section], schema, joiOptions)
-      .then(value => request[section] = value)
+      .then(values => {
+        Object.keys(values).map(key => request[section][key] = values[key])
+      })
     break;
   case 'header':
     promise = Promise.all(Object.keys(schema).map(name => {

@@ -32,7 +32,7 @@ app.listen(3000)
 4. **Add schemas** and request/response validation functions to check request parameters.
 5. **Generate documentation** by running `microjoi` to convert (Joi) schemas to (Swagger).
 
-## Directory Structure 
+## Directory Structure
 ```
 /your-project
   /api
@@ -105,6 +105,8 @@ const schemas = {
 }
 
 function validateRequest(request) {
+  // request.validation = {body: {details: request.validation.details}}
+  // delete request.validation
   // return Promise
 }
 
